@@ -6,15 +6,17 @@ The project is set up for [PyPI Trusted Publishing](https://docs.pypi.org/truste
 (OIDC), so no long-lived API tokens are stored in the repo. See
 `.github/workflows/publish.yml`.
 
-> **Current state (2026-09-15).** Trusted publishing is **broken since the repository was
-> renamed** (`arango-schema-mapper` → `arango-schema-analyzer`). Every tag-triggered run
-> since 2026-07-31 fails at "Publish to PyPI" with `invalid-publisher: valid token, but no
-> corresponding publisher`: the OIDC token now carries
-> `repository: ArthurKeen/arango-schema-analyzer`, while PyPI's publisher entry still names
-> the old repository. 0.13.x and 0.14.0 were uploaded with the local fallback
-> (`scripts/publish.sh`, below). To restore OIDC, re-add the publisher on PyPI with the
-> values in "One-time setup" and re-run `publish.yml` via *workflow_dispatch*; "file already
-> exists" for the current version is the success signal.
+> **State (2026-09-15).** Trusted publishing broke when the repository was renamed
+> (`arango-schema-mapper` → `arango-schema-analyzer`): every tag-triggered run from
+> 2026-07-31 to the v0.14.0 tag failed at "Publish to PyPI" with `invalid-publisher`,
+> because the OIDC token's `repository` claim no longer matched PyPI's publisher entry,
+> and 0.13.x/0.14.0 were uploaded with the local fallback (`scripts/publish.sh`). **The
+> publisher was re-registered on 2026-09-15 and OIDC works again**: a `workflow_dispatch`
+> at 15:00 UTC passed "Publish to PyPI", and a second at 20:36 UTC reached PyPI and was
+> refused only with `400 File already exists` for 0.14.0 — the expected outcome for a
+> version that is already published. Keep the publisher entry in step with the values in
+> "One-time setup"; if a repo rename or workflow rename happens again, this is the first
+> thing to check.
 
 ## One-time setup (PyPI side)
 
@@ -54,8 +56,8 @@ The project is set up for [PyPI Trusted Publishing](https://docs.pypi.org/truste
 
 6. The tag push triggers `.github/workflows/publish.yml`, which builds the
    sdist + wheel, runs `twine check --strict`, and uploads to PyPI via OIDC.
-   Until the publisher is re-registered (see the note at the top) the upload step
-   fails; the build still runs, and the upload is done with `scripts/publish.sh`.
+   Re-running the workflow for an already-published version fails with
+   `400 File already exists`; that is PyPI refusing a duplicate, not a publisher problem.
 7. Create a GitHub Release from the tag (optional but recommended) and paste
    the changelog section into the release notes.
 
@@ -88,11 +90,11 @@ This produces `dist/arangodb_schema_analyzer-<version>-py3-none-any.whl` and
 
 ## Local publish from `.env` (fallback)
 
-Trusted Publishing (OIDC) via the tag-triggered workflow is the intended path
-and needs no credentials. **It is the fallback that is in use today** (see the
-note at the top): until PyPI's publisher entry matches the renamed repository,
-publish from your machine with the helper script, which reads a PyPI API token
-from the gitignored `.env`:
+Trusted Publishing (OIDC) via the tag-triggered workflow is the recommended
+path and needs no credentials (restored 2026-09-15; see the note at the top).
+If you need to publish from your machine — OIDC unavailable, or the publisher
+entry is mid-migration again — use the helper script, which reads a PyPI API
+token from the gitignored `.env`:
 
 ```bash
 # .env (never committed — see .env.example):
