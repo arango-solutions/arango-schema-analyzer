@@ -412,3 +412,14 @@ def test_non_unique_field_is_never_a_target():
     shapes = _natural_key_shapes()
     shapes["documents"].unique_fields = set()
     assert not any(r.fields == ["document_code"] for r in infer_foreign_keys(shapes))
+
+
+def test_upper_case_collections_are_matched_by_name():
+    # CUSTOMER_ID must resolve to CUSTOMERS. With a case-sensitive singularize the
+    # target's name variants were {customers, customerss, customerses} -- never
+    # "customer" -- so the relationship was silently missed.
+    shapes = {
+        "CUSTOMERS": CollectionShape(name="CUSTOMERS", fields={"_key": "string", "NAME": "string"}, count=50),
+        "ORDERS": CollectionShape(name="ORDERS", fields={"_key": "string", "CUSTOMER_ID": "string"}, count=500),
+    }
+    assert ("ORDERS", "CUSTOMER_ID", "CUSTOMERS") in _pairs(infer_foreign_keys(shapes))

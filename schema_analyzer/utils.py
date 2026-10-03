@@ -183,18 +183,27 @@ _IE_SINGULAR_ROOTS = frozenset(
 
 
 def singularize(name: str) -> str:
-    """Best-effort English singularization for collection/entity names."""
+    """Best-effort English singularization for collection/entity names.
+
+    Suffixes match case-insensitively, and a replacement letter follows the case of
+    the letter it replaces, so ``CUSTOMERS`` -> ``CUSTOMER`` and ``CATEGORIES`` ->
+    ``CATEGORY``. Upper-case names used to come back unchanged, which hid every
+    relationship to an upper-case collection from FK inference -- the fix
+    relational-schema-analyzer 0.9.0 and r2g 0.4.2 made to their copies.
+    ``csi.naming.singularize`` was already case-insensitive.
+    """
     n = name.strip()
-    if n.endswith("ies") and len(n) > 3:
+    lower = n.lower()
+    if lower.endswith("ies") and len(n) > 3:
         # Distinguish consonant+y→consonant+ies (city→cities) from root-ie+s (movie→movies).
         # Words whose singular ends in "-ie" should just drop the "s".
         without_s = n[:-1]
         if without_s.lower() in _IE_SINGULAR_ROOTS:
             return without_s
-        return n[:-3] + "y"
-    if n.endswith("sses") and len(n) > 4:
+        return n[:-3] + ("Y" if n[-3].isupper() else "y")
+    if lower.endswith("sses") and len(n) > 4:
         return n[:-2]
-    if n.endswith("s") and not n.endswith("ss") and len(n) > 1:
+    if lower.endswith("s") and not lower.endswith("ss") and len(n) > 1:
         return n[:-1]
     return n
 

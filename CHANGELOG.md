@@ -2,7 +2,18 @@
 
 ## Unreleased
 
-(no changes)
+### Fixed
+- **Upper-case collection names are singularized, so their relationships are found.**
+  `utils.singularize` matched plural suffixes in lower case only, so `CUSTOMERS`, `ORDERS`
+  and `USAGE_METRICS` came back unchanged. FK inference builds a target's name variants
+  from it, so a `CUSTOMER_ID` field was never matched to a `CUSTOMERS` collection and the
+  relationship was silently missed. Type detection named such a collection's entity in
+  the plural (`CUSTOMERS`). Suffixes now match case-insensitively and a replacement letter
+  follows the case it replaces (`CATEGORIES` → `CATEGORY`); lower- and mixed-case names
+  are unchanged. Affects graphs whose collections keep upper-case names, typically ones
+  loaded from Snowflake or Oracle sources. CSI naming already used its own
+  case-insensitive `singularize` and is unaffected. Same fix as relational-schema-analyzer
+  0.9.0 and r2g 0.4.2.
 
 ## 0.14.0 — 2026-09-14
 

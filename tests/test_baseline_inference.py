@@ -1,3 +1,5 @@
+import pytest
+
 from schema_analyzer.baseline import infer_baseline_from_snapshot
 from schema_analyzer.utils import singularize
 
@@ -692,3 +694,23 @@ def test_collection_per_entity_unions_by_type_properties():
     props = [p["name"] for p in ents["Document"]["properties"]]
     assert props == ["account_id", "channel", "citable_url", "source", "subject"]  # sorted union + discriminator
     assert out["physicalMapping"]["entities"]["Document"]["style"] == "COLLECTION"
+
+
+@pytest.mark.parametrize(
+    ("plural", "singular"),
+    [
+        # Upper-case names (graphs loaded from Snowflake or Oracle keep them) used
+        # to come back unchanged; the suffix rules matched lower case only.
+        ("CUSTOMERS", "CUSTOMER"),
+        ("ORDERS", "ORDER"),
+        ("USAGE_METRICS", "USAGE_METRIC"),
+        ("CATEGORIES", "CATEGORY"),
+        ("COOKIES", "COOKIE"),
+        ("ADDRESSES", "ADDRESS"),
+        ("CLASS", "CLASS"),
+        ("Categories", "Category"),
+        ("Orders", "Order"),
+    ],
+)
+def test_singularize_is_case_insensitive(plural, singular):
+    assert singularize(plural) == singular

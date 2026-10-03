@@ -229,3 +229,11 @@ def test_edge_endpoints_fall_back_when_no_endpoint_fields(monkeypatch) -> None:
     assert result["collections_by_relation"] == {
         "KNOWS": {"from_collections": ["people"], "to_collections": ["people"]}
     }
+
+
+def test_entity_type_from_an_upper_case_collection_is_singular():
+    # utils.singularize ignored upper-case suffixes, so CUSTOMERS stayed plural.
+    from schema_analyzer.type_detection import infer_entity_type_from_collection_name
+
+    assert infer_entity_type_from_collection_name("CUSTOMERS") == "CUSTOMER"
+    assert infer_entity_type_from_collection_name("customers") == "Customer"
